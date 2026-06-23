@@ -163,6 +163,37 @@ class Score:
         self.img = self.fonto.render(f"Score: {self.score}", 0, self.color)
         screen.blit(self.img, self.rct)
 
+class Explosion:
+    """
+    爆発エフェクトに関するクラス
+    """
+    def __init__(self, bomb: "Bomb"):
+        """
+        爆発画像Surfaceを生成する
+        引数 bomb：爆発した爆弾のBombインスタンス
+        """
+        img = pg.image.load("fig/explosion.gif")
+        img = pg.transform.rotozoom(img, 0, 0.5)
+
+        self.imgs = [
+            img,
+            pg.transform.flip(img, True, True)
+        ]
+
+        self.rct = self.imgs[0].get_rect()
+        self.rct.center = bomb.rct.center
+
+        self.life = 20  # 爆発を表示する時間
+
+    def update(self, screen: pg.Surface):
+        """
+        爆発エフェクトを画面に描画する
+        """
+        self.life -= 1
+
+        if self.life > 0:
+            self.img = self.imgs[self.life % 2]
+            screen.blit(self.img, self.rct)
 
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
@@ -180,6 +211,8 @@ def main():
     beams = []  # ゲーム初期化時にはビームは存在しない
     
     score = Score()
+    
+    exps = []
     clock = pg.time.Clock()
     tmr = 0
     while True:
@@ -208,6 +241,7 @@ def main():
                     if bomb is not None:
                         if beam.rct.colliderect(bomb.rct):
                             score.score += 1  # 爆弾を打ち落としたら1点加算
+                            exps.append(Explosion(bomb))
                             beams[j] = None
                             bombs[i] = None
                             break
@@ -223,7 +257,11 @@ def main():
         beams = [beam for beam in beams if check_bound(beam.rct) == (True, True)] 
         for bomb in bombs:  
            bomb.update(screen)
-           score.update(screen)
+           
+        exps = [exp for exp in exps if exp.life > 0] 
+        for exp in exps:
+            exp.update(screen) 
+        score.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
